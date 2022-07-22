@@ -12,9 +12,17 @@ class Shiki
 
     private static ?string $customWorkingDirPath = null;
 
+    /** @var ?callable */
+    private static $customRenderer = null;
+
     public static function setCustomWorkingDirPath(?string $path)
     {
         static::$customWorkingDirPath = $path;
+    }
+
+    public static function setCustomRenderer(?callable $customRenderer)
+    {
+        static::$customRenderer = $customRenderer;
     }
 
     public static function highlight(
@@ -25,7 +33,7 @@ class Shiki
         ?array $addLines = null,
         ?array $deleteLines = null,
         ?array $focusLines = null,
-        ?bool $tokenize = false
+        null|callable|false $renderer = null
     ): string|array {
         $language = $language ?? 'php';
         $theme = $theme ?? 'nord';
@@ -34,28 +42,13 @@ class Shiki
             'highlightLines' => $highlightLines ?? [],
             'addLines' => $addLines ?? [],
             'deleteLines' => $deleteLines ?? [],
-            'focusLines' => $focusLines ?? [],
-            'tokenize' => $tokenize
-        ]);
-    }
-
-    public static function tokenize(
-        string $code,
-        ?string $language = null,
-        ?string $theme = null,
-        ?array $highlightLines = null,
-        ?array $addLines = null,
-        ?array $deleteLines = null,
-        ?array $focusLines = null
-    ): array {
-        return static::highlight($code, $language, $theme, $highlightLines, $addLines, $deleteLines, $focusLines, true);
+            'focusLines' => $focusLines ?? []
+        ], $renderer);
     }
 
     public function getAvailableLanguages(): array
     {
-        $shikiResult = $this->callShiki('languages');
-
-        $languageProperties = json_decode($shikiResult, true);
+        $languageProperties = $this->callShiki('languages');
 
         $languages = array_map(
             fn ($properties) => $properties['id'],
@@ -74,9 +67,7 @@ class Shiki
 
     public function getAvailableThemes(): array
     {
-        $shikiResult = $this->callShiki('themes');
-
-        return json_decode($shikiResult, true);
+        return $this->callShiki('themes');
     }
 
     public function languageIsAvailable(string $language): bool
@@ -89,17 +80,15 @@ class Shiki
         return in_array($theme, $this->getAvailableThemes());
     }
 
-    public function highlightCode(string $code, string $language, ?string $theme = null, ?array $options = []): string|array
+    public function highlightCode(string $code, string $language, ?string $theme = null, ?array $options = [], null|callable|false $renderer = null): string|array
     {
-        $theme = $theme ?? $this->defaultTheme;
+        $renderer ??= (static::$customRenderer ?? new HtmlRenderer());
+
+        $theme ??= $this->defaultTheme;
 
         $result = $this->callShiki($code, $language, $theme, $options);
 
-        if (array_key_exists('tokenize', $options) && $options['tokenize']) {
-            return json_decode($result, true);
-        }
-
-        return $result;
+        return $renderer ? $renderer($result, $options) : $result;
     }
 
     public function getWorkingDirPath(): string
@@ -111,7 +100,7 @@ class Shiki
         return realpath(dirname(__DIR__) . '/bin');
     }
 
-    protected function callShiki(...$arguments): string
+    protected function callShiki(...$arguments): array
     {
         $command = [
             (new ExecutableFinder())->find('node', 'node', [
@@ -134,6 +123,8 @@ class Shiki
             throw new ProcessFailedException($process);
         }
 
-        return $process->getOutput();
+        $output = $process->getOutput();
+
+        return json_decode($output, true);
     }
 }

@@ -3,7 +3,7 @@
 use Spatie\ShikiPhp\Shiki;
 use function Spatie\Snapshots\assertMatchesSnapshot;
 
-beforeAll(fn () => Shiki::setCustomWorkingDirPath(null));
+beforeEach(fn () => Shiki::setCustomRenderer(null));
 
 it('can get the default workingDirPath', function () {
     expect((new Shiki())->getWorkingDirPath())
@@ -49,7 +49,7 @@ it('can highlight antlers', function () {
 it('can tokenize php', function () {
     $code = '<?php echo "Hello World"; ?>';
 
-    $tokens = Shiki::tokenize($code);
+    $tokens = Shiki::highlight($code, null, null, null, null, null, null, false);
 
     assertMatchesSnapshot($tokens);
 });
@@ -57,7 +57,7 @@ it('can tokenize php', function () {
 it('can tokenize blade', function () {
     $code = '@if(true) {{ "Hello world" }} @endif';
 
-    $tokens = Shiki::tokenize($code, 'blade');
+    $tokens = Shiki::highlight($code, 'blade', null, null, null, null, null, false);
 
     assertMatchesSnapshot($tokens);
 });
@@ -69,7 +69,7 @@ it('can tokenize complex blade with html inside', function () {
     @endif
     blade;
 
-    $tokens = Shiki::tokenize($code, 'blade', 'github-light');
+    $tokens = Shiki::highlight($code, 'blade', 'github-light', null, null, null, null, false);
 
     assertMatchesSnapshot($tokens);
 });

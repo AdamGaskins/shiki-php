@@ -1,17 +1,10 @@
 <?php
 
 use Spatie\ShikiPhp\Shiki;
+use Spatie\ShikiPhp\Tests\testfiles\CustomHtmlRenderer;
 use function Spatie\Snapshots\assertMatchesSnapshot;
 
-beforeEach(fn () => Shiki::setCustomWorkingDirPath(__DIR__ . '/testfiles/alt-bin'));
-
-it('can verify the custom CWD path and modify it', function () {
-    expect((new Shiki())->getWorkingDirPath())
-        ->toBeString()->toBe(__DIR__ . '/testfiles/alt-bin');
-    Shiki::setCustomWorkingDirPath(null);
-    expect((new Shiki())->getWorkingDirPath())
-        ->toBeString()->toBe(dirname(__DIR__).'/bin');
-});
+beforeEach(fn () => Shiki::setCustomRenderer(new CustomHtmlRenderer()));
 
 it('can highlight php', function () {
     $code = '<?php echo "Hello World"; ?>';
@@ -47,6 +40,34 @@ it('can highlight antlers', function () {
     $highlightedCode = Shiki::highlight($code, 'antlers');
 
     assertMatchesSnapshot($highlightedCode);
+});
+
+it('can tokenize php', function () {
+    $code = '<?php echo "Hello World"; ?>';
+
+    $tokens = Shiki::highlight($code, null, null, null, null, null, null, false);
+
+    assertMatchesSnapshot($tokens);
+});
+
+it('can tokenize blade', function () {
+    $code = '@if(true) {{ "Hello world" }} @endif';
+
+    $tokens = Shiki::highlight($code, 'blade', null, null, null, null, null, false);
+
+    assertMatchesSnapshot($tokens);
+});
+
+it('can tokenize complex blade with html inside', function () {
+    $code = <<<blade
+    @if(\$foo)
+        <p>{{ "Hello world" }}</p>
+    @endif
+    blade;
+
+    $tokens = Shiki::highlight($code, 'blade', 'github-light', null, null, null, null, false);
+
+    assertMatchesSnapshot($tokens);
 });
 
 it('can render for a specific language', function () {
