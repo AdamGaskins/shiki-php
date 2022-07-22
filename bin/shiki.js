@@ -64,6 +64,10 @@ shiki.getHighlighter({
     const theme = highlighter.getTheme();
     const options = arguments[3] || {};
 
+    if ('tokenize' in options && options.tokenize) {
+        return process.stdout.write(JSON.stringify(tokens))
+    }
+
     process.stdout.write(renderer.renderToHtml(tokens, {
         fg: theme.fg,
         bg: theme.bg,

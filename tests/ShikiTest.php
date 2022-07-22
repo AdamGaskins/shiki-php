@@ -46,6 +46,34 @@ it('can highlight antlers', function () {
     assertMatchesSnapshot($highlightedCode);
 });
 
+it('can tokenize php', function () {
+    $code = '<?php echo "Hello World"; ?>';
+
+    $tokens = Shiki::tokenize($code);
+
+    assertMatchesSnapshot($tokens);
+});
+
+it('can tokenize blade', function () {
+    $code = '@if(true) {{ "Hello world" }} @endif';
+
+    $tokens = Shiki::tokenize($code, 'blade');
+
+    assertMatchesSnapshot($tokens);
+});
+
+it('can tokenize complex blade with html inside', function () {
+    $code = <<<blade
+    @if(\$foo)
+        <p>{{ "Hello world" }}</p>
+    @endif
+    blade;
+
+    $tokens = Shiki::tokenize($code, 'blade', 'github-light');
+
+    assertMatchesSnapshot($tokens);
+});
+
 it('can render for a specific language', function () {
     $code = 'console.log("Hello world")';
 

@@ -24,8 +24,9 @@ class Shiki
         ?array $highlightLines = null,
         ?array $addLines = null,
         ?array $deleteLines = null,
-        ?array $focusLines = null
-    ): string {
+        ?array $focusLines = null,
+        ?bool $tokenize = false
+    ): string|array {
         $language = $language ?? 'php';
         $theme = $theme ?? 'nord';
 
@@ -34,7 +35,20 @@ class Shiki
             'addLines' => $addLines ?? [],
             'deleteLines' => $deleteLines ?? [],
             'focusLines' => $focusLines ?? [],
+            'tokenize' => $tokenize
         ]);
+    }
+
+    public static function tokenize(
+        string $code,
+        ?string $language = null,
+        ?string $theme = null,
+        ?array $highlightLines = null,
+        ?array $addLines = null,
+        ?array $deleteLines = null,
+        ?array $focusLines = null
+    ): array {
+        return static::highlight($code, $language, $theme, $highlightLines, $addLines, $deleteLines, $focusLines, true);
     }
 
     public function getAvailableLanguages(): array
@@ -75,11 +89,17 @@ class Shiki
         return in_array($theme, $this->getAvailableThemes());
     }
 
-    public function highlightCode(string $code, string $language, ?string $theme = null, ?array $options = []): string
+    public function highlightCode(string $code, string $language, ?string $theme = null, ?array $options = []): string|array
     {
         $theme = $theme ?? $this->defaultTheme;
 
-        return $this->callShiki($code, $language, $theme, $options);
+        $result = $this->callShiki($code, $language, $theme, $options);
+
+        if (array_key_exists('tokenize', $options) && $options['tokenize']) {
+            return json_decode($result, true);
+        }
+
+        return $result;
     }
 
     public function getWorkingDirPath(): string
